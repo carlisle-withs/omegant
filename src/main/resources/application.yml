@@ -1,0 +1,115 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: enterprise-agent
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:agent_db}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:36379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+agent:
+  runtime:
+    max-iterations: 6
+  gateway:
+    requests-per-minute: 60
+  llm:
+    enabled: true
+    base-url: ${MINIMAX_BASE_URL:https://api.minimax.chat}
+    api-key: ${MINIMAX_API_KEY}
+    chat-model: ${MINIMAX_CHAT_MODEL:minimax-m2.7}
+    embedding-model: ${MINIMAX_EMBEDDING_MODEL:text-embedding-3-small}
+    temperature: 0.2
+    max-context-messages: 12
+  rag:
+    enabled: ${AGENT_RAG_ENABLED:true}
+    top-k: ${AGENT_RAG_TOP_K:4}
+    similarity-threshold: ${AGENT_RAG_SIMILARITY_THRESHOLD:0.2}
+    rewrite-with-history: ${AGENT_RAG_REWRITE_WITH_HISTORY:true}
+  session:
+    provider: ${AGENT_SESSION_PROVIDER:memory}
+    ttl-minutes: ${AGENT_SESSION_TTL_MINUTES:120}
+  planning:
+    enabled: ${AGENT_PLANNING_ENABLED:true}
+    strategy: ${AGENT_PLANNING_STRATEGY:llm}
+    allow-replan: ${AGENT_PLANNING_ALLOW_REPLAN:true}
+    max-replan-attempts: ${AGENT_PLANNING_MAX_REPLAN:2}
+    max-plan-steps: ${AGENT_PLANNING_MAX_STEPS:10}
+  intent:
+    recognition:
+      enabled: ${AGENT_INTENT_ENABLED:true}
+      use-llm: ${AGENT_INTENT_USE_LLM:true}
+  memory:
+    two-tier:
+      enabled: ${AGENT_MEMORY_TWO_TIER_ENABLED:true}
+      short-term:
+        max-messages: ${AGENT_MEMORY_STM_MAX_MESSAGES:20}
+        ttl-minutes: ${AGENT_MEMORY_STM_TTL_MINUTES:120}
+      long-term:
+        enabled: ${AGENT_MEMORY_LTM_ENABLED:true}
+        summarizer: ${AGENT_MEMORY_LTM_SUMMARIZER:llm}
+        threshold: ${AGENT_MEMORY_LTM_THRESHOLD:10}
+  mcp:
+    enabled: ${AGENT_MCP_ENABLED:true}
+    servers:
+      - name: local
+        type: http
+        enabled: ${AGENT_MCP_LOCAL_ENABLED:false}
+        server-url: ${AGENT_MCP_LOCAL_SERVER_URL:http://localhost:8090}
+
+      - name: dashscope-webparser
+        type: sse
+        enabled: ${AGENT_MCP_DASHSCOPE_WEBPARSER_ENABLED:true}
+        sse-endpoint: ${AGENT_MCP_DASHSCOPE_WEBPARSER_SSE_ENDPOINT:https://dashscope.aliyuncs.com/api/v1/mcps/WebParser/sse}
+        headers:
+          Authorization: Bearer ${DASHSCOPE_API_KEY}
+
+      - name: dashscope-zimage
+        type: streamableHttp
+        enabled: true
+        server-url: ${AGENT_MCP_DASHSCOPE_ZIMAGE_URL:https://dashscope.aliyuncs.com/api/v1/mcps/zimage/mcp}
+        headers:
+          Authorization: Bearer ${DASHSCOPE_API_KEY}
+
+      - name: dashscope-weather
+        type: streamableHttp
+        enabled: true
+        server-url: ${AGENT_MCP_DASHSCOPE_WEATHER_URL:https://dashscope.aliyuncs.com/api/v1/mcps/mcp-OWQ3Njc0M2FlY2Ji/mcp}
+        headers:
+          Authorization: Bearer ${DASHSCOPE_API_KEY}
+
+logging:
+  level:
+    agent.tracing: INFO
+    agent.mcp: INFO
+    mcp: INFO
