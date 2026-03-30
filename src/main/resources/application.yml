@@ -33,7 +33,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,beans
   endpoint:
     health:
       show-details: always
